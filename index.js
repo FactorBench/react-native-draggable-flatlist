@@ -39,7 +39,7 @@ const layoutAnimConfig = {
   }
 }
 
-class SortableFlatList extends Component {
+class DraggableFlatList extends Component {
   _moveAnim = new Animated.Value(0)
   _offset = new Animated.Value(0)
   _hoverAnim = Animated.add(this._moveAnim, this._offset)
@@ -118,7 +118,7 @@ class SortableFlatList extends Component {
         const spacerMeasurements = this._measurements[spacerIndex]
         const lastElementMeasurements = this._measurements[data.length - 1]
         if (activeRow === -1) return
-        // If user flings row up and lets go in the middle of an animation measurements can error out. 
+        // If user flings row up and lets go in the middle of an animation measurements can error out.
         // Give layout animations some time to complete and animate element into place before calling onMoveEnd
 
         // Spacers have different positioning depending on whether the spacer row is before or after the active row.
@@ -299,7 +299,7 @@ class SortableFlatList extends Component {
   }
 
   renderItem = ({ item, index }) => {
-    const { renderItem, data, horizontal } = this.props
+    const { renderItem, data, horizontal, sortable } = this.props
     const { activeRow, spacerIndex } = this.state
     const isActiveRow = activeRow === index
     const isSpacerRow = spacerIndex === index
@@ -311,7 +311,7 @@ class SortableFlatList extends Component {
 
     return (
       <View style={[styles.fullOpacity, { flexDirection: horizontal ? 'row' : 'column' }]} >
-        {isSpacerRow && <View style={spacerStyle} />}
+        {sortable && isSpacerRow && <View style={spacerStyle} />}
         <RowItem
           horizontal={horizontal}
           index={index}
@@ -322,8 +322,9 @@ class SortableFlatList extends Component {
           move={this.move}
           moveEnd={this.moveEnd}
           extraData={this.state.extraData}
+          sortable={sortable}
         />
-        {endPadding && <View style={spacerStyle} />}
+        {sortable && endPadding && <View style={spacerStyle} />}
       </View>
     )
   }
@@ -346,11 +347,11 @@ class SortableFlatList extends Component {
       this.containerView.measure((x, y, width, height, pageX, pageY) => {
         this._containerOffset = horizontal ? pageX : pageY
         this._containerSize = horizontal ? width : height
-      })      
+      })
     }
   }
 
-  keyExtractor = (item, index) => `sortable-flatlist-item-${index}`
+  keyExtractor = (item, index) => `draggable-flatlist-item-${index}`
 
   componentDidUpdate = (prevProps, prevState) => {
     if (prevProps.extraData !== this.props.extraData) {
@@ -390,11 +391,12 @@ class SortableFlatList extends Component {
   }
 }
 
-export default SortableFlatList
+export default DraggableFlatList
 
-SortableFlatList.defaultProps = {
+DraggableFlatList.defaultProps = {
   scrollPercent: 5,
   scrollSpeed: 5,
+  sortable: true,
   contentContainerStyle: {},
 }
 
@@ -407,7 +409,7 @@ class RowItem extends React.PureComponent {
   }
 
   render() {
-    const { moveEnd, isActiveRow, horizontal, renderItem, item, index, setRef } = this.props
+    const { moveEnd, isActiveRow, horizontal, renderItem, item, index, setRef, sortable } = this.props
     const component = renderItem({
       isActive: false,
       item,
@@ -415,9 +417,14 @@ class RowItem extends React.PureComponent {
       move: this.move,
       moveEnd,
     })
-    let wrapperStyle = { opacity: 1 }
-    if (horizontal && isActiveRow) wrapperStyle = { width: 0, opacity: 0 }
-    else if (!horizontal && isActiveRow) wrapperStyle = { height: 0, opacity: 0 }
+    let wrapperStyle = { opacity: isActiveRow ? 0 : 1 };
+    if (sortable && isActiveRow) {
+        if (horizontal) {
+            wrapperStyle.width = 0;
+        } else {
+            wrapperStyle.height = 0;
+        }
+    }
 
     // Rendering the final row requires padding to be applied at the bottom
     return (
