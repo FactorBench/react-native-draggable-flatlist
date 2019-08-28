@@ -303,6 +303,7 @@ class DraggableFlatList extends Component {
     const { activeRow, spacerIndex } = this.state
     const isActiveRow = activeRow === index
     const isSpacerRow = spacerIndex === index
+    const isSwappingRow = spacerIndex - (activeRow < spacerIndex ? 1 : 0) === index;
     const isLastItem = index === data.length - 1
     const spacerAfterLastItem = spacerIndex >= data.length
     const activeRowSize = this._measurements[activeRow] ? this._measurements[activeRow][horizontal ? 'width' : 'height'] : 0
@@ -316,6 +317,7 @@ class DraggableFlatList extends Component {
           horizontal={horizontal}
           index={index}
           isActiveRow={isActiveRow}
+          isSwappingRow={isSwappingRow}
           renderItem={renderItem}
           item={item}
           setRef={this.setRef}
@@ -404,14 +406,22 @@ class RowItem extends React.PureComponent {
 
   move = () => {
     const { move, moveEnd, renderItem, item, index } = this.props
-    const hoverComponent = renderItem({ isActive: true, item, index, move: () => null, moveEnd })
+    const hoverComponent = renderItem({
+        isActive: true,
+        isSwapping: false,
+        item,
+        index,
+        move: () => null,
+        moveEnd,
+    })
     move(hoverComponent, index)
   }
 
   render() {
-    const { moveEnd, isActiveRow, horizontal, renderItem, item, index, setRef, sortable } = this.props
+    const { moveEnd, isActiveRow, isSwappingRow, horizontal, renderItem, item, index, setRef, sortable } = this.props
     const component = renderItem({
       isActive: false,
+      isSwapping: isSwappingRow,
       item,
       index,
       move: this.move,
